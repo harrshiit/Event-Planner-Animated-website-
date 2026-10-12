@@ -161,12 +161,13 @@ export const Gallery: React.FC<GalleryProps> = ({
               <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/40">
                 {item.mediaType === 'video' ? (
                   <>
-                    <video
-                      src={item.src}
-                      preload="metadata"
-                      muted
-                      playsInline
-                      className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 pointer-events-none"
+                    <img
+                      src={item.thumbnail || item.src}
+                      alt={item.alt}
+                      referrerPolicy="no-referrer"
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-108"
                     />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
                       <div className="w-13 h-13 rounded-full bg-[#063B33]/85 border-2 border-[#D4AF72] flex items-center justify-center shadow-2xl group-hover:scale-115 transition-transform duration-300">
@@ -184,6 +185,7 @@ export const Gallery: React.FC<GalleryProps> = ({
                       alt={item.alt}
                       referrerPolicy="no-referrer"
                       loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-108"
                     />
                     <div className="absolute top-4 right-4 p-2 rounded-full bg-black/60 text-white border border-white/20 transition-transform duration-300 group-hover:scale-110">

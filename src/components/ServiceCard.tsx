@@ -25,6 +25,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ service, onViewGallery
           alt={service.name}
           referrerPolicy="no-referrer"
           loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-108"
         />
         {/* Subtle gradient scrim */}

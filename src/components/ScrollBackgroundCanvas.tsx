@@ -1,14 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 const TOTAL_FRAMES = 300;
-const CONCURRENT_DOWNLOADS = 8;
 const LERP_FACTOR = 0.12;
-
-const FRAME_VERSION = Date.now();
 
 function getFrameUrl(index: number): string {
   const frameNum = String(index + 1).padStart(4, '0');
-  return `/frames/frame_${frameNum}.jpg?v=${FRAME_VERSION}`;
+  return `/frames/frame_${frameNum}.jpg`;
 }
 
 export const ScrollBackgroundCanvas: React.FC = () => {
@@ -23,13 +20,22 @@ export const ScrollBackgroundCanvas: React.FC = () => {
     const ctx = canvas.getContext('2d', { alpha: false });
     if (!ctx) return;
 
+    // Device-adaptive parameters
+    const isMobile = window.innerWidth < 768;
+    const CONCURRENT_DOWNLOADS = isMobile ? 2 : 4;
+    const WINDOW_AHEAD = isMobile ? 12 : 20;
+    const WINDOW_BEHIND = isMobile ? 4 : 8;
+    const MAX_IN_MEMORY = isMobile ? 36 : 75;
+    const ANCHOR_STEP = isMobile ? 25 : 15;
+
     const images: (HTMLImageElement | null)[] = new Array(TOTAL_FRAMES).fill(null);
-    // 0 = unrequested, 1 = fetching, 2 = loaded, 3 = failed
+    // 0 = unrequested, 1 = fetching, 2 = loaded in RAM, 3 = failed
     const frameStatus = new Uint8Array(TOTAL_FRAMES);
 
     let loadedCount = 0;
     let targetFrame = 0;
     let currentFrame = 0;
+    let lastTargetFrame = 0;
     let lastDrawnIndex = -1;
     let activeWorkers = 0;
     let rafId: number | null = null;
@@ -37,7 +43,8 @@ export const ScrollBackgroundCanvas: React.FC = () => {
 
     function resizeCanvas() {
       if (!canvas) return;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const maxDpr = isMobile ? 1.5 : 2;
+      const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
       const width = window.innerWidth;
       const height = window.innerHeight;
 
@@ -66,7 +73,7 @@ export const ScrollBackgroundCanvas: React.FC = () => {
       const dy = (ch - dh) * 0.5;
 
       ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
+      ctx.imageSmoothingQuality = isMobile ? 'medium' : 'high';
       ctx.drawImage(img, dx, dy, dw, dh);
     }
 
@@ -109,6 +116,7 @@ export const ScrollBackgroundCanvas: React.FC = () => {
         1
       );
       const progress = maxScroll > 0 ? Math.max(0, Math.min(1, scrollY / maxScroll)) : 0;
+      lastTargetFrame = targetFrame;
       targetFrame = progress * (TOTAL_FRAMES - 1);
       pumpLoader();
     }
@@ -119,26 +127,75 @@ export const ScrollBackgroundCanvas: React.FC = () => {
       if (Math.abs(delta) > 0.0001) {
         currentFrame += delta * LERP_FACTOR;
         const frameIdx = Math.round(currentFrame);
-        drawFrame(frameIdx);
+        if (frameIdx !== lastDrawnIndex) {
+          drawFrame(frameIdx);
+        }
       }
       rafId = requestAnimationFrame(rafLoop);
     }
 
-    function getNextIndexToLoad(): number {
-      const currentTarget = Math.round(targetFrame);
-      let bestIndex = -1;
-      let minDistance = Infinity;
-
+    // Free distant in-memory images to keep mobile RAM usage bounded
+    function evictDistantFrames(center: number) {
+      let count = 0;
       for (let i = 0; i < TOTAL_FRAMES; i++) {
-        if (frameStatus[i] === 0) {
-          const dist = Math.abs(i - currentTarget);
-          if (dist < minDistance) {
-            minDistance = dist;
-            bestIndex = i;
-          }
+        if (frameStatus[i] === 2) count++;
+      }
+      if (count <= MAX_IN_MEMORY) return;
+
+      const safeDistance = WINDOW_AHEAD + 12;
+      for (let i = 0; i < TOTAL_FRAMES; i++) {
+        // Never evict frame 0 (fallback)
+        if (i === 0) continue;
+        if (frameStatus[i] === 2 && Math.abs(i - center) > safeDistance) {
+          images[i] = null;
+          frameStatus[i] = 0;
+          count--;
+          if (count <= MAX_IN_MEMORY) break;
         }
       }
-      return bestIndex;
+    }
+
+    // Windowed, priority-based loader that only downloads frames near the active scroll position
+    function getNextIndexToLoad(): number {
+      const currentTarget = Math.round(targetFrame);
+      const isScrollingDown = targetFrame >= lastTargetFrame;
+
+      const windowStart = Math.max(0, currentTarget - WINDOW_BEHIND);
+      const windowEnd = Math.min(TOTAL_FRAMES - 1, currentTarget + WINDOW_AHEAD);
+
+      // 1. Prioritize immediate target frame first
+      if (frameStatus[currentTarget] === 0) {
+        return currentTarget;
+      }
+
+      // 2. Prioritize forward direction within active window
+      if (isScrollingDown) {
+        for (let i = currentTarget + 1; i <= windowEnd; i++) {
+          if (frameStatus[i] === 0) return i;
+        }
+        for (let i = currentTarget - 1; i >= windowStart; i--) {
+          if (frameStatus[i] === 0) return i;
+        }
+      } else {
+        for (let i = currentTarget - 1; i >= windowStart; i--) {
+          if (frameStatus[i] === 0) return i;
+        }
+        for (let i = currentTarget + 1; i <= windowEnd; i++) {
+          if (frameStatus[i] === 0) return i;
+        }
+      }
+
+      // 3. Opportunistically prefetch nearby sparse anchor frames
+      for (let step = 1; step <= 3; step++) {
+        const anchorForward = Math.min(TOTAL_FRAMES - 1, Math.round(currentTarget / ANCHOR_STEP + step) * ANCHOR_STEP);
+        if (frameStatus[anchorForward] === 0) return anchorForward;
+
+        const anchorBack = Math.max(0, Math.round(currentTarget / ANCHOR_STEP - step) * ANCHOR_STEP);
+        if (frameStatus[anchorBack] === 0) return anchorBack;
+      }
+
+      // Outside the active scroll region? Do not download.
+      return -1;
     }
 
     function pumpLoader() {
@@ -163,22 +220,16 @@ export const ScrollBackgroundCanvas: React.FC = () => {
         if (finished || isDisposed) return;
         finished = true;
         frameStatus[index] = success ? 2 : 3;
-        loadedCount++;
         activeWorkers--;
 
-        if (progressBarRef.current) {
-          const percent = Math.min(100, Math.round((loadedCount / TOTAL_FRAMES) * 100));
-          progressBarRef.current.style.width = `${percent}%`;
-          if (loadedCount >= TOTAL_FRAMES) {
-            setIsLoaded(true);
-          }
-        }
-
         if (success) {
+          loadedCount++;
           const curIdx = Math.round(currentFrame);
           if (lastDrawnIndex < 0 || Math.abs(index - curIdx) < Math.abs(lastDrawnIndex - curIdx)) {
             drawFrame(curIdx, true);
           }
+
+          evictDistantFrames(Math.round(targetFrame));
         }
 
         pumpLoader();
@@ -186,6 +237,7 @@ export const ScrollBackgroundCanvas: React.FC = () => {
 
       img.onload = () => onComplete(true);
       img.onerror = () => onComplete(false);
+      img.decoding = 'async';
       img.src = getFrameUrl(index);
 
       if (img.complete && img.naturalWidth > 0) {
@@ -200,38 +252,72 @@ export const ScrollBackgroundCanvas: React.FC = () => {
 
     // Initial canvas setup
     resizeCanvas();
-    updateScrollProgress();
+    const docElem = document.documentElement;
+    const docBody = document.body;
+    const scrollY = window.pageYOffset || window.scrollY || docElem.scrollTop || (docBody ? docBody.scrollTop : 0) || 0;
+    const maxScroll = Math.max(
+      docElem.scrollHeight - window.innerHeight,
+      (docBody ? docBody.scrollHeight : 0) - window.innerHeight,
+      1
+    );
+    const initialProgress = maxScroll > 0 ? Math.max(0, Math.min(1, scrollY / maxScroll)) : 0;
+    targetFrame = initialProgress * (TOTAL_FRAMES - 1);
     currentFrame = targetFrame;
+    const startIdx = Math.round(targetFrame);
 
-    // Load first frame immediately
-    frameStatus[0] = 1;
+    // Load initial visible frame immediately for instant background paint
+    frameStatus[startIdx] = 1;
     const firstFrame = new Image();
-    images[0] = firstFrame;
+    images[startIdx] = firstFrame;
     let firstDone = false;
     const onFirstDone = (success: boolean) => {
       if (firstDone || isDisposed) return;
       firstDone = true;
-      frameStatus[0] = success ? 2 : 3;
+      frameStatus[startIdx] = success ? 2 : 3;
       loadedCount++;
-      drawFrame(0, true);
-      pumpLoader();
+      drawFrame(startIdx, true);
+      setIsLoaded(true);
+      if (progressBarRef.current) {
+        progressBarRef.current.style.width = '100%';
+      }
     };
     firstFrame.onload = () => onFirstDone(true);
     firstFrame.onerror = () => onFirstDone(false);
-    firstFrame.src = getFrameUrl(0);
+    firstFrame.decoding = 'async';
+    firstFrame.src = getFrameUrl(startIdx);
     if (firstFrame.complete && firstFrame.naturalWidth > 0) {
       onFirstDone(true);
     }
+
+    // Trigger forward frame preloading on user scroll or touch interaction
+    const onUserInteraction = () => {
+      pumpLoader();
+    };
+    window.addEventListener('scroll', updateScrollProgress, { passive: true });
+    document.addEventListener('scroll', updateScrollProgress, { passive: true });
+    window.addEventListener('touchstart', onUserInteraction, { passive: true, once: true });
+    window.addEventListener('wheel', onUserInteraction, { passive: true, once: true });
+
+    // Fallback: fade out progress bar within 300ms
+    const readyTimer = setTimeout(() => {
+      setIsLoaded(true);
+      if (progressBarRef.current) {
+        progressBarRef.current.style.width = '100%';
+      }
+    }, 300);
 
     // Start RAF
     rafId = requestAnimationFrame(rafLoop);
 
     return () => {
       isDisposed = true;
+      clearTimeout(readyTimer);
       if (rafId !== null) cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resizeCanvas);
       window.removeEventListener('scroll', updateScrollProgress);
       document.removeEventListener('scroll', updateScrollProgress);
+      window.removeEventListener('touchstart', onUserInteraction);
+      window.removeEventListener('wheel', onUserInteraction);
     };
   }, []);
 

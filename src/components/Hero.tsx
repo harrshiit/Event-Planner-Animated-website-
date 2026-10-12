@@ -106,6 +106,7 @@ export const Hero: React.FC<HeroProps> = ({ onExploreClick }) => {
                 alt="Luxury Indian Wedding and Reception Banquet Decor by SG Event Planner"
                 referrerPolicy="no-referrer"
                 loading="eager"
+                decoding="async"
                 className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
               />
               {/* Refined gradient scrim for contrast */}
@@ -133,6 +134,8 @@ export const Hero: React.FC<HeroProps> = ({ onExploreClick }) => {
                 src={cateringPreviewImg}
                 alt="Bespoke Catering and Dining Setup"
                 referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent p-2.5 flex items-end">

@@ -48,6 +48,7 @@ export const SgLogo: React.FC<SgLogoProps> = ({
               alt="SG Event Planner Emblem"
               referrerPolicy="no-referrer"
               onError={() => setImageError(true)}
+              decoding="async"
               className="w-full h-full object-cover scale-110"
             />
           ) : (
@@ -105,6 +106,7 @@ export const SgLogo: React.FC<SgLogoProps> = ({
             alt="SG Event Planner Official Logo - Spread Love With Strong Bonding"
             referrerPolicy="no-referrer"
             onError={() => setImageError(true)}
+            decoding="async"
             className="w-full h-auto max-w-sm mx-auto object-cover rounded-2xl shadow-2xl transition-transform duration-500 hover:scale-102"
           />
         ) : (

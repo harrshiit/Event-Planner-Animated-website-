@@ -472,13 +472,13 @@ export const CategoryGalleryModal: React.FC<CategoryGalleryModalProps> = ({
                 <div className="relative aspect-[4/3] w-full overflow-hidden bg-black">
                   {item.mediaType === 'video' ? (
                     <>
-                      {/* Video element with preload=metadata for immediate first frame preview */}
-                      <video
-                        src={item.src}
-                        preload="metadata"
-                        muted
-                        playsInline
-                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 pointer-events-none"
+                      <img
+                        src={item.thumbnail || item.src}
+                        alt={item.alt}
+                        loading="lazy"
+                        decoding="async"
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-108"
                       />
                       {/* Video Play Overlay */}
                       <div className="absolute inset-0 flex items-center justify-center bg-black/25 group-hover:bg-black/10 transition-colors">
@@ -499,6 +499,7 @@ export const CategoryGalleryModal: React.FC<CategoryGalleryModalProps> = ({
                         src={item.src}
                         alt={item.alt}
                         loading="lazy"
+                        decoding="async"
                         referrerPolicy="no-referrer"
                         className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-108"
                       />
