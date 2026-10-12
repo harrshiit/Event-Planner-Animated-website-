@@ -1,0 +1,6 @@
+{
+  "name": "SG EVENT PLANNER — Luxury Event Planning & Catering",
+  "description": "SG EVENT PLANNER specializes in luxury wedding management, opulent decor, corporate galas, and bespoke catering services. Spread Love With Strong Bonding.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
