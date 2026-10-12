@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import sgLogoImg from '../assets/images/sg_event_planner_logo_1791458315006.jpg';
 
-export const SG_LOGO_ASSET = '/src/assets/images/sg_event_planner_logo_1791458315006.jpg';
+export const SG_LOGO_ASSET = sgLogoImg;
 
 interface SgLogoProps {
   variant?: 'full' | 'crest' | 'wordmark';

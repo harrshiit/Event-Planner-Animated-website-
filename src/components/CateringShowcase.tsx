@@ -1,6 +1,7 @@
 import React from 'react';
 import { getCateringWhatsAppUrl } from '../data/companyConfig';
 import { MessageCircle, Utensils, Sparkles, Check } from 'lucide-react';
+import cateringDiningImg from '../assets/images/catering_banquet_dining_1791457076406.jpg';
 
 export const CateringShowcase: React.FC = () => {
   const cateringWhatsappUrl = getCateringWhatsAppUrl();
@@ -19,7 +20,7 @@ export const CateringShowcase: React.FC = () => {
           <div className="lg:col-span-6 space-y-6">
             <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-[#D4AF72]/30 aspect-[4/3]">
               <img
-                src="/src/assets/images/catering_banquet_dining_1791457076406.jpg"
+                src={cateringDiningImg}
                 alt="Luxury Catering and Banquet Table Arrangement"
                 referrerPolicy="no-referrer"
                 loading="lazy"

@@ -1,6 +1,9 @@
 import React from 'react';
 import { COMPANY_CONFIG, getWhatsAppUrl } from '../data/companyConfig';
 import { MessageCircle, ArrowRight, Sparkles, Award } from 'lucide-react';
+import sgLogoImg from '../assets/images/sg_event_planner_logo_1791458315006.jpg';
+import heroWeddingImg from '../assets/images/hero_luxury_wedding_1791457065780.jpg';
+import cateringPreviewImg from '../assets/images/catering_banquet_dining_1791457076406.jpg';
 
 interface HeroProps {
   onExploreClick?: () => void;
@@ -88,7 +91,7 @@ export const Hero: React.FC<HeroProps> = ({ onExploreClick }) => {
             <div className="absolute -top-6 -left-6 sm:-top-8 sm:-left-8 z-20 w-24 h-24 sm:w-32 sm:h-32 rounded-full p-1 bg-gradient-to-tr from-[#8A642B] via-[#D4AF72] to-[#FFF4DE] shadow-2xl flex items-center justify-center">
               <div className="w-full h-full rounded-full overflow-hidden bg-[#063B33] border border-[#D4AF72]/40 relative">
                 <img
-                  src="/src/assets/images/sg_event_planner_logo_1791458315006.jpg"
+                  src={sgLogoImg}
                   alt="Official SG Event Planner Crest"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover scale-110"
@@ -99,7 +102,7 @@ export const Hero: React.FC<HeroProps> = ({ onExploreClick }) => {
             {/* Main Featured Image Container with sculpted asymmetrical corners */}
             <div className="relative rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl border border-[#D4AF72]/30 group aspect-[4/3] sm:aspect-[16/11]">
               <img
-                src="/src/assets/images/hero_luxury_wedding_1791457065780.jpg"
+                src={heroWeddingImg}
                 alt="Luxury Indian Wedding and Reception Banquet Decor by SG Event Planner"
                 referrerPolicy="no-referrer"
                 loading="eager"
@@ -127,7 +130,7 @@ export const Hero: React.FC<HeroProps> = ({ onExploreClick }) => {
             {/* Overlapping Secondary Preview Image (Inspired by reference's overlapping food/dish element) */}
             <div className="hidden sm:block absolute -bottom-8 -right-6 w-44 sm:w-52 aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl border-2 border-[#D4AF72]/50 bg-[#063B33]">
               <img
-                src="/src/assets/images/catering_banquet_dining_1791457076406.jpg"
+                src={cateringPreviewImg}
                 alt="Bespoke Catering and Dining Setup"
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover"
